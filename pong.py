@@ -8,10 +8,12 @@ import pygame
 ALTO = 600
 ANCHO = 800
 
+FPS = 80
+
 ALTO_PALA = 100
 ANCHO_PALA = 10
 MARGEN = 30
-VEL_JUGADOR = 1
+VEL_JUGADOR = 10
 
 TAM_PELOTA = 8
 
@@ -90,6 +92,8 @@ class Pong:
     def __init__(self):
         pygame.init()
         self.pantalla = pygame.display.set_mode((ANCHO, ALTO))
+        self.reloj = pygame.time.Clock()
+        
         self.pelota = Pelota()
         self.jugador1 = Jugador(MARGEN)
         self.jugador2 = Jugador(ANCHO - MARGEN - ANCHO_PALA)
@@ -99,6 +103,7 @@ class Pong:
 
         while not salir:
             # bucle principal (main loop)
+            self.reloj.tick(FPS)
 
             # capturar los eventos
             for evento in pygame.event.get():
