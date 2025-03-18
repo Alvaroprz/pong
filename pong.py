@@ -64,10 +64,16 @@ class Jugador(Pintable):
         super().__init__(x, y, ANCHO_PALA, ALTO_PALA)
 
     def subir(self):
+        limite = 0
         self.y -= VEL_JUGADOR
+        if self.y < limite:
+            self.y = limite
 
     def bajar(self):
+        limite = ALTO - ALTO_PALA
         self.y += VEL_JUGADOR
+        if self.y > limite:
+            self.y = limite
 
 
 class Pong:
