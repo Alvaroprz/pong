@@ -151,6 +151,9 @@ class Pong:
             self.pelota.pintar(self.pantalla)
             self.pelota.x += self.pelota.vel_x
             self.pelota.y += self.pelota.vel_y
+            if self.pelota.y <= 0 or self.pelota.y >= (ALTO - TAM_PELOTA):
+                self.pelota.vel_y = -self.pelota.vel_y
+
 
             # 3. mostrar los cambios en la pantalla
             pygame.display.flip()
