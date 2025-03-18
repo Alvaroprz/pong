@@ -1,3 +1,4 @@
+from random import randint
 import pygame
 
 #########################################################
@@ -13,9 +14,10 @@ FPS = 80
 ALTO_PALA = 100
 ANCHO_PALA = 10
 MARGEN = 30
-VEL_JUGADOR = 10
+VEL_JUGADOR = 8
+VEL_PELOTA = 8
 
-TAM_PELOTA = 8
+TAM_PELOTA = 5
 
 COLOR_FONDO = (0, 0, 0)
 COLOR_OBJETOS = (200, 200, 200)
@@ -54,6 +56,11 @@ class Pelota(Pintable):
         x = (ANCHO - self.tam_pelota) / 2
         y = (ALTO - self.tam_pelota) / 2
         super().__init__(x, y, self.tam_pelota, self.tam_pelota)
+
+        self.vel_x = 0
+        while self.vel_x == 0:
+            self.vel_x = randint(-VEL_PELOTA , VEL_PELOTA)
+        self.vel_y = randint(-VEL_PELOTA, VEL_PELOTA)
 
     def mover(self):
         pass
@@ -142,6 +149,8 @@ class Pong:
 
             # pinto la pelota
             self.pelota.pintar(self.pantalla)
+            self.pelota.x += self.pelota.vel_x
+            self.pelota.y += self.pelota.vel_y
 
             # 3. mostrar los cambios en la pantalla
             pygame.display.flip()
