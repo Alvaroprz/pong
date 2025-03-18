@@ -17,7 +17,7 @@ MARGEN = 30
 VEL_JUGADOR = 8
 VEL_PELOTA = 8
 
-TAM_PELOTA = 5
+TAM_PELOTA = 8
 
 COLOR_FONDO = (0, 0, 0)
 COLOR_OBJETOS = (200, 200, 200)
@@ -63,7 +63,32 @@ class Pelota(Pintable):
         self.vel_y = randint(-VEL_PELOTA, VEL_PELOTA)
 
     def mover(self):
-        pass
+        limite_sup = 0
+        limite_inf = ALTO - self.tam_pelota
+
+        self.x += self.vel_x
+        self.y += self.vel_y
+
+        if self.y <= limite_sup or self.y >= limite_inf:
+            self.vel_y = -self.vel_y
+
+        if self.x <= 0:
+            self.reiniciar(True)
+        if self.x >= (ANCHO - self.tam_pelota):
+            self.reiniciar(False)
+
+    def reiniciar(self, irIzquierda):
+        self.x = (ANCHO - self.tam_pelota) / 2
+        self.y = (ALTO - self.tam_pelota) / 2
+        self.vel_y = randint(-VEL_PELOTA, VEL_PELOTA)
+        self.vel_x = randint(1, VEL_PELOTA)
+
+        if irIzquierda:
+            self.vel_x = -self.vel_x
+
+
+
+
 
 
 class Jugador(Pintable):
@@ -148,11 +173,17 @@ class Pong:
             self.pintar_red()
 
             # pinto la pelota
+            self.pelota.mover()
             self.pelota.pintar(self.pantalla)
-            self.pelota.x += self.pelota.vel_x
-            self.pelota.y += self.pelota.vel_y
-            if self.pelota.y <= 0 or self.pelota.y >= (ALTO - TAM_PELOTA):
-                self.pelota.vel_y = -self.pelota.vel_y
+            
+            if self.pelota.colliderect(self.jugador1):
+                self.pelota.vel_x = randint(1, VEL_PELOTA)
+                self.pelota.vel_y = randint(-VEL_PELOTA, VEL_PELOTA)
+
+            if self.pelota.colliderect(self.jugador2):
+                self.pelota.vel_x = randint(-VEL_PELOTA, 1)
+                self.pelota.vel_y = randint(-VEL_PELOTA, VEL_PELOTA)
+
 
 
             # 3. mostrar los cambios en la pantalla
