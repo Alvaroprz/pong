@@ -1,5 +1,30 @@
-from random import randint
+from random import randint, choice
+
 import pygame
+
+
+"""
+1. El contador empieza en (0,0) (es decir, mantiene dos puntuaciones, una para cada jugador)
+
+2. Siempre aumenta de uno en uno
+3. Hay que aumentar un punto para el jugador "contrario"
+   al lado del campo por el que sale la pelota.
+   A esto lo llamamos "condición de punto".
+4. Cuando la puntuación de un jugador alcanza 9 ha ganado la partida
+5. Hay que pintarlo en la parte superior de la pantalla
+
+------
+
+- Clase Marcador
+- Tiene un atributo tipo lista / un atributo por jugador para mantener la puntuación
+- Al inicio, ese atributo tiene los valores [0, 0]
+- Tiene un método incrementar que aumenta el marcador para el jugador que gana un punto
+  (y siempre lo hace de uno en uno)
+- Tiene un método pintar para hacerlo visible en la pantalla
+- Tiene un método quien_gana para comprobar si alguno de los dos jugadores ha ganado
+  (esto pasa cuando uno de los dos alcanza una puntuación de 9)
+- Tiene un método reset que pone el marcador en (0,0)
+"""
 
 #########################################################
 # Configuraciones
@@ -14,14 +39,15 @@ FPS = 80
 ALTO_PALA = 100
 ANCHO_PALA = 10
 MARGEN = 30
-VEL_JUGADOR = 8
-VEL_PELOTA = 8
+VEL_JUGADOR = 5
 
 TAM_PELOTA = 8
+VEL_PELOTA = 5
 
 COLOR_FONDO = (0, 0, 0)
 COLOR_OBJETOS = (200, 200, 200)
 
+"""
 #########################################################
 
 # pinto la pelota
@@ -35,6 +61,7 @@ COLOR_OBJETOS = (200, 200, 200)
 # - método que la mueva
 # - atributos para el movimiento ?
 # - ¿puntuación?
+"""
 
 
 class Pintable(pygame.Rect):
@@ -47,20 +74,13 @@ class Pintable(pygame.Rect):
 
 
 class Pelota(Pintable):
-    # atributos
     tam_pelota = TAM_PELOTA
-    # mov??
 
-    # métodos
     def __init__(self):
-        x = (ANCHO - self.tam_pelota) / 2
-        y = (ALTO - self.tam_pelota) / 2
-        super().__init__(x, y, self.tam_pelota, self.tam_pelota)
+        super().__init__(0, 0, self.tam_pelota, self.tam_pelota)
 
-        self.vel_x = 0
-        while self.vel_x == 0:
-            self.vel_x = randint(-VEL_PELOTA , VEL_PELOTA)
-        self.vel_y = randint(-VEL_PELOTA, VEL_PELOTA)
+        haciaIzquierda = choice([True, False])
+        self.reiniciar(haciaIzquierda)
 
     def mover(self):
         limite_sup = 0
@@ -72,10 +92,15 @@ class Pelota(Pintable):
         if self.y <= limite_sup or self.y >= limite_inf:
             self.vel_y = -self.vel_y
 
+        punto_para = 0
         if self.x <= 0:
             self.reiniciar(True)
+            punto_para = 2
         if self.x >= (ANCHO - self.tam_pelota):
             self.reiniciar(False)
+            punto_para = 1
+
+        return punto_para
 
     def reiniciar(self, irIzquierda):
         self.x = (ANCHO - self.tam_pelota) / 2
@@ -86,9 +111,9 @@ class Pelota(Pintable):
         if irIzquierda:
             self.vel_x = -self.vel_x
 
-
-
-
+    def parar(self):
+        self.vel_x = 0
+        self.vel_y = 0
 
 
 class Jugador(Pintable):
@@ -98,16 +123,60 @@ class Jugador(Pintable):
         super().__init__(x, y, ANCHO_PALA, ALTO_PALA)
 
     def subir(self):
+
         limite = 0
+
         self.y -= VEL_JUGADOR
         if self.y < limite:
             self.y = limite
 
     def bajar(self):
+
         limite = ALTO - ALTO_PALA
+
         self.y += VEL_JUGADOR
         if self.y > limite:
             self.y = limite
+
+
+class Marcador:
+    """
+        - Tiene un atributo tipo lista / un atributo por jugador para mantener la puntuación
+        - Al inicio, ese atributo tiene los valores [0, 0]
+        - Tiene un método reset que pone el marcador en (0,0)
+        - Tiene un método incrementar que aumenta el marcador para el jugador que gana un punto
+        (y siempre lo hace de uno en uno)
+
+    - Tiene un método quien_gana para comprobar si alguno de los dos jugadores ha ganado
+    (esto pasa cuando uno de los dos alcanza una puntuación de 9)
+
+
+    - Tiene un método pintar para hacerlo visible en la pantalla
+    """
+
+    def __init__(self):
+        self.reset()
+
+    def reset(self):
+        self.puntuacion = [0, 0]
+
+    def incrementar(self, jugador: int):
+        if jugador in (1, 2):
+            self.puntuacion[jugador-1] += 1
+
+    def quien_gana(self):
+
+        ganador = 0
+
+        if self.puntuacion[0] == 9:
+            ganador = 1
+        elif self.puntuacion[1] == 9:
+            ganador = 2
+
+        return ganador
+
+    def pintar(self):
+        print(f'Marcador: ({self.puntuacion[0]}, {self.puntuacion[1]})')
 
 
 class Pong:
@@ -125,13 +194,15 @@ class Pong:
         pygame.init()
         self.pantalla = pygame.display.set_mode((ANCHO, ALTO))
         self.reloj = pygame.time.Clock()
-        
+
         self.pelota = Pelota()
         self.jugador1 = Jugador(MARGEN)
         self.jugador2 = Jugador(ANCHO - MARGEN - ANCHO_PALA)
+        self.marcador = Marcador()
 
     def jugar(self):
         salir = False
+        self.marcador.pintar()
 
         while not salir:
             # bucle principal (main loop)
@@ -158,10 +229,8 @@ class Pong:
 
             # renderizar mis objetos
             # 1. borrar la pantalla
-            pygame.draw.rect(
-                self.pantalla,
-                COLOR_FONDO,
-                ((0, 0), (ANCHO, ALTO)))
+            # pygame.draw.rect(self.pantalla,COLOR_FONDO,((0, 0), (ANCHO, ALTO)))
+            self.pantalla.fill(COLOR_FONDO)
 
             # 2. pintar los objetos en la posición correspondiente
 
@@ -173,18 +242,24 @@ class Pong:
             self.pintar_red()
 
             # pinto la pelota
-            self.pelota.mover()
+            punto_para = self.pelota.mover()
+            if punto_para in (1, 2):
+                self.marcador.incrementar(punto_para)
+                ganador = self.marcador.quien_gana()
+                if ganador > 0:
+                    print(f'El jugador {ganador} ha ganado la partida')
+                    self.pelota.parar()
+                self.marcador.pintar()
+
             self.pelota.pintar(self.pantalla)
-            
+
             if self.pelota.colliderect(self.jugador1):
                 self.pelota.vel_x = randint(1, VEL_PELOTA)
                 self.pelota.vel_y = randint(-VEL_PELOTA, VEL_PELOTA)
 
             if self.pelota.colliderect(self.jugador2):
-                self.pelota.vel_x = randint(-VEL_PELOTA, 1)
+                self.pelota.vel_x = randint(-VEL_PELOTA, -1)
                 self.pelota.vel_y = randint(-VEL_PELOTA, VEL_PELOTA)
-
-
 
             # 3. mostrar los cambios en la pantalla
             pygame.display.flip()
@@ -223,5 +298,9 @@ class Pong:
             )
 
 
-juego = Pong()
-juego.jugar()
+if __name__ == '__main__':
+    print('Invocado desde la línea de comandos')
+    juego = Pong()
+    juego.jugar()
+else:
+    print('Invocado como módulo', __name__)
