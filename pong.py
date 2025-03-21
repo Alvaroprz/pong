@@ -47,6 +47,8 @@ VEL_PELOTA = 5
 COLOR_FONDO = (0, 0, 0)
 COLOR_OBJETOS = (200, 200, 200)
 
+PUNTOS_PARTIDA = 4
+
 """
 #########################################################
 
@@ -62,6 +64,15 @@ COLOR_OBJETOS = (200, 200, 200)
 # - atributos para el movimiento ?
 # - ¿puntuación?
 """
+
+
+def preparar_tipografia(size: int):
+    tipos_sistema = pygame.font.get_fonts()
+    letra = 'montserrat'
+    if letra not in tipos_sistema:
+        letra = pygame.font.get_default_font()
+    tipo_letra = pygame.font.SysFont(letra, size, True)
+    return tipo_letra
 
 
 class Pintable(pygame.Rect):
@@ -119,8 +130,8 @@ class Pelota(Pintable):
 class Jugador(Pintable):
 
     def __init__(self, x):
-        y = (ALTO - ALTO_PALA) / 2
-        super().__init__(x, y, ANCHO_PALA, ALTO_PALA)
+        super().__init__(x, 0, ANCHO_PALA, ALTO_PALA)
+        self.reset()
 
     def subir(self):
 
@@ -137,6 +148,9 @@ class Jugador(Pintable):
         self.y += VEL_JUGADOR
         if self.y > limite:
             self.y = limite
+
+    def reset(self):
+        self.y = (ALTO - ALTO_PALA) / 2
 
 
 class Marcador:
@@ -155,6 +169,7 @@ class Marcador:
     """
 
     def __init__(self):
+        self.tipo_letra = preparar_tipografia(80)
         self.reset()
 
     def reset(self):
@@ -168,15 +183,32 @@ class Marcador:
 
         ganador = 0
 
-        if self.puntuacion[0] == 9:
+        if self.puntuacion[0] == PUNTOS_PARTIDA:
             ganador = 1
-        elif self.puntuacion[1] == 9:
+        elif self.puntuacion[1] == PUNTOS_PARTIDA:
             ganador = 2
 
         return ganador
 
-    def pintar(self):
-        print(f'Marcador: ({self.puntuacion[0]}, {self.puntuacion[1]})')
+    def pintar(self, pantalla):
+        # puntos1 = str(self.puntuacion[0])
+        # img_puntos1 = self.tipo_letra.render(puntos1, True, COLOR_OBJETOS)
+        # pantalla.blit(img_puntos1, (ANCHO/2 - MARGEN*2 -
+        #               img_puntos1.get_width(), MARGEN))
+
+        # puntos2 = str(self.puntuacion[1])
+        # img_puntos2 = self.tipo_letra.render(puntos2, True, COLOR_OBJETOS)
+        # pantalla.blit(img_puntos2, (ANCHO/2+MARGEN*2, MARGEN))
+
+        for i in range(len(self.puntuacion)):
+            separacion_red = MARGEN * 2
+            puntos = str(self.puntuacion[i])
+            img_puntos = self.tipo_letra.render(puntos, True, COLOR_OBJETOS)
+            ancho_img = img_puntos.get_width()
+            pos_x = ANCHO/2 - separacion_red - \
+                ancho_img + i*(ancho_img + separacion_red*2)
+            pos_y = MARGEN
+            pantalla.blit(img_puntos, (pos_x, pos_y))
 
 
 class Pong:
@@ -195,6 +227,8 @@ class Pong:
         self.pantalla = pygame.display.set_mode((ANCHO, ALTO))
         self.reloj = pygame.time.Clock()
 
+        self.tipo_letra = preparar_tipografia(30)
+
         self.pelota = Pelota()
         self.jugador1 = Jugador(MARGEN)
         self.jugador2 = Jugador(ANCHO - MARGEN - ANCHO_PALA)
@@ -202,7 +236,6 @@ class Pong:
 
     def jugar(self):
         salir = False
-        self.marcador.pintar()
 
         while not salir:
             # bucle principal (main loop)
@@ -213,9 +246,20 @@ class Pong:
                 if evento.type == pygame.QUIT:
                     print('Has pulsado el botón de cerrar la ventana')
                     salir = True
-                if evento.type == pygame.KEYUP and evento.key == pygame.K_ESCAPE:
-                    print('Has "soltado" la tecla ESC')
-                    salir = True
+                if evento.type == pygame.KEYUP:
+                    if evento.key == pygame.K_ESCAPE:
+                        print('Has "soltado" la tecla ESC')
+                        salir = True
+                    if ganador > 0:
+                        if evento.key == pygame.K_s:
+                            print('Has "soltado" la tecla S')
+                            self.marcador.reset()
+                            self.jugador1.reset()
+                            self.jugador2.reset()
+                            self.pelota.reiniciar(True)
+                        if evento.key == pygame.K_n:
+                            print('Has "soltado" la tecla N')
+                            salir = True
 
             estado_teclas = pygame.key.get_pressed()
             if estado_teclas[pygame.K_a]:
@@ -245,11 +289,13 @@ class Pong:
             punto_para = self.pelota.mover()
             if punto_para in (1, 2):
                 self.marcador.incrementar(punto_para)
-                ganador = self.marcador.quien_gana()
-                if ganador > 0:
-                    print(f'El jugador {ganador} ha ganado la partida')
-                    self.pelota.parar()
-                self.marcador.pintar()
+
+            ganador = self.marcador.quien_gana()
+            if ganador > 0:
+                self.anunciar_fin_partida(ganador)
+                self.pelota.parar()
+
+            self.marcador.pintar(self.pantalla)
 
             self.pelota.pintar(self.pantalla)
 
@@ -296,6 +342,19 @@ class Pong:
                 (pos_x, pos_y+tramo_pintado),
                 ancho_red
             )
+
+    def anunciar_fin_partida(self, ganador):
+        texto = f'El jugador {ganador} ha ganado la partida'
+        img = self.tipo_letra.render(texto, True, COLOR_OBJETOS, COLOR_FONDO)
+        x = (ANCHO - img.get_width()) / 2
+        y = ALTO/2 - MARGEN - img.get_height()
+        self.pantalla.blit(img, (x, y))
+
+        texto = f'¿Otra partidita? (s/n)'
+        img = self.tipo_letra.render(texto, True, COLOR_OBJETOS, COLOR_FONDO)
+        x = (ANCHO - img.get_width()) / 2
+        y = ALTO/2 + MARGEN
+        self.pantalla.blit(img, (x, y))
 
 
 if __name__ == '__main__':
